@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
+import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { Button } from '../../components/Button';
 import { Header } from '../../components/Header';
 import { Photo } from '../../components/Photo';
+import storage from '@react-native-firebase/storage'
 
 import { Container, Content, Progress, Transferred } from './styles';
 
 export function Upload() {
   const [image, setImage] = useState('');
+  const [bytesTransferred, setBytesTransferred] = useState('')
+  const [progress, setProgress] = useState('0')
 
   async function handlePickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -26,24 +30,44 @@ export function Upload() {
     }
   };
 
+  async function handleUpload() {
+    const fileName = new Date().getTime()
+    const reference = storage().ref(`/images/${fileName}.png`)
+
+    const uploadTask = reference.putFile(image)
+
+    uploadTask.on('state_changed', taskSnapshot => {
+      const percent = ((taskSnapshot.bytesTransferred / taskSnapshot.totalBytes) * 100).toFixed(0)
+      setProgress(percent)
+
+      setBytesTransferred(`${taskSnapshot.bytesTransferred} transferidos de ${taskSnapshot.totalBytes}`)
+    })
+
+    uploadTask.then(async () => {
+      const imageUrl = await reference.getDownloadURL()
+      console.log(imageUrl) //ideal pegar essa informação e salvar no bd
+      Alert.alert('Upload concluído')
+    })
+  }
+
   return (
     <Container>
-      <Header title="Lista de compras" />
+      <Header title="Upload de fotos" />
 
       <Content>
         <Photo uri={image} onPress={handlePickImage} />
 
         <Button
           title="Fazer upload"
-          onPress={() => { }}
+          onPress={handleUpload}
         />
 
         <Progress>
-          0%
+          {progress}%
         </Progress>
 
         <Transferred>
-          0 de 100 bytes transferido
+          {bytesTransferred}
         </Transferred>
       </Content>
     </Container>

@@ -24,3 +24,4 @@ export default function App() {
     </ThemeProvider>
   );
 }
+//App para aprender usar firebase
